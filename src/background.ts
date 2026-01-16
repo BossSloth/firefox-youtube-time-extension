@@ -44,7 +44,7 @@ async function checkYouTubeTabs() {
                         await waitForTabReady(tab.id);
                     }
 
-                    const data = await updateTab(tab);
+    const data = await updateTab(tab, true);
                     if (data) {
                         videoDataStorage[data[0]] = data[1];
                     }
@@ -62,14 +62,18 @@ async function checkYouTubeTabs() {
     await browser.storage.local.set({'videoDataStorage': videoDataStorage});
 }
 
-// browser.tabs.onActivated.addListener(async (activeInfo) => {
-//     let tab = await browser.tabs.get(activeInfo.tabId);
-//     let previousTab = await browser.tabs.get(activeInfo.previousTabId);
-//     if (previousTab.url.includes('youtube.com/watch') && previousTab.url in (await getStorage())) {
-//         console.log('Updating ' + previousTab.url);
-//         await updateTab(previousTab);
-//     }
-// });
+browser.tabs.onActivated.addListener(async (activeInfo) => {
+    const previousTab = await browser.tabs.get(activeInfo.previousTabId);
+    const storage = await getStorage();
+    if (previousTab.url.includes('youtube.com/watch') && previousTab.url in storage) {
+        console.log('Updating ' + previousTab.url);
+        const data = await updateTab(previousTab, false);
+        if (data) {
+            storage[data[0]] = data[1];
+            await browser.storage.local.set({'videoDataStorage': storage});
+        }
+    }
+});
 
 // browser.tabs.onMoved.addListener(async (tabId, moveInfo) => {
 //     let tab = await browser.tabs.get(tabId);
@@ -93,10 +97,24 @@ browser.runtime.onMessage.addListener(async (message: any) => {
 //     console.log(videoDataStorage);
 // });
 
-async function updateTab(tab: Tab): Promise<[string, VideoData] | undefined>
+async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, VideoData] | undefined>
 {
+    if (!tab.url || !tab.url.includes('youtube.com/watch')) {
+        return undefined;
+    }
     try {
-        const [timeWatched, totalDuration, title] = (await browser.tabs.executeScript(tab.id, {file: 'src/youtube.js'}))[0];
+        await browser.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (pause: boolean) => {
+                (window as any).shouldPauseVideo = pause;
+            },
+            args: [shouldPause]
+        });
+        const results = await browser.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['src/youtube.js']
+        });
+        const [timeWatched, totalDuration, title] = results[0].result as [string, string, string];
         let timeWatchedNumber = stringToSecondsWatched(timeWatched);
         let totalDurationNumber = stringToSecondsWatched(totalDuration);
         let percentage = timeWatchedNumber/totalDurationNumber*100;

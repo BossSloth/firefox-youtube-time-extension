@@ -22,8 +22,19 @@ async function start() {
     await waitForElm('.ytp-time-current');
     const title = document.title.split('- YouTube')[0].trim();
 
-    document.querySelector('video').pause()
-    return [document.querySelector('.ytp-time-current').textContent, document.querySelector('.ytp-time-duration').textContent, title];
+    const video = document.querySelector('video');
+    const currentTime = document.querySelector('.ytp-time-current');
+    const duration = document.querySelector('.ytp-time-duration');
+
+    if (video && (window as any).shouldPauseVideo) {
+        video.pause();
+    }
+
+    return [
+        currentTime?.textContent ?? '0:00',
+        duration?.textContent ?? '0:00',
+        title
+    ];
 }
 
 start().then((data) => {
