@@ -1,0 +1,16 @@
+{
+  "name": "firefox-youtube-time-tracker",
+  "version": "1.0.0",
+  "main": "background.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "serve:firefox": "web-ext run --start-url \"about:debugging#/runtime/this-firefox\"  --source-dir ./dist/ --firefox-profile=test"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/firefox-webext-browser": "^120.0.4",
+    "typescript": "^5.8.3",
+    "web-ext": "^8.9.0"
+  }
+}
