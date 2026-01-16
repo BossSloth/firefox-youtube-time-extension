@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <title>My Extension</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        body {
+            max-width: 30rem;
+            background-color: #212529 !important;
+        }
+
+        #title {
+
+        }
+    </style>
+</head>
+<body style="padding: 1rem;">
+<div style="display: flex" class="mb-1">
+    <h1 class="mb-0">Video's</h1>
+    <img id="spinner" src="ring-resize.svg" style="width: 24px; height: 24px; color: white; margin: auto 0; display: none; margin-left: auto;">
+    <button class="ms-auto" id="refresh" style="width: 32px;
+    height: 32px;
+    display: flex;
+    border: none;
+    border-radius: 50%;
+    background-color: #4a535b;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16" style="margin: auto">
+            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+        </svg>
+    </button>
+</div>
+<input class="form-control" type="text" id="search" placeholder="Search..">
+<ul id="list" class="me-3 mb-5">
+    <li class="d-none">
+        <div class="d-flex">
+            <span id="title">
+                Video title
+            </span>
+            <button class="btn pt-0 pb-1" id="openTab" style="margin-left: auto;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-youtube" viewBox="0 0 16 16">
+                    <path d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.007 2.007 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.007 2.007 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31.4 31.4 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.007 2.007 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A99.788 99.788 0 0 1 7.858 2h.193zM6.4 5.209v4.818l4.157-2.408z"/>
+                </svg>
+            </button>
+        </div>
+        <div class="progress position-relative">
+            <div id="progress-bar" class="progress-bar bg-danger" style="width: 50%"></div>
+            <small id="start-time" class="ps-2 position-absolute">3:30</small>
+            <small id="end-time" class="ms-auto pe-2 position-absolute" style="right: 0.25rem">10:30</small>
+        </div>
+        <span id="left">1:30:2</span>
+    </li>
+</ul>
+<script src="src/popup.js" type="module"></script>
+</body>
+</html>
