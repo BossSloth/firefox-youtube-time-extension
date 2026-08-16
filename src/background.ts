@@ -1,4 +1,5 @@
-import type { VideoData } from "./types.js";
+import type { VideoData } from './types.js';
+import { stringToSeconds } from './util.js';
 import Tab = browser.tabs.Tab;
 
 async function init(): Promise<void> {
@@ -15,7 +16,7 @@ async function checkYouTubeTabs(): Promise<void> {
     console.log('Gathering youtube tabs');
     const videoDataStorage = await getStorage();
     const tabs = await browser.tabs.query({});
-    const urls = tabs.map(tab => tab.url).filter((url): url is string => Boolean(url));
+    const urls = tabs.map((tab) => tab.url).filter((url): url is string => Boolean(url));
 
     for (const key in videoDataStorage) {
         if (!urls.includes(key)) {
@@ -85,19 +86,19 @@ async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, Video
             func: (pause: boolean) => {
                 (window as unknown as { shouldPauseVideo?: boolean }).shouldPauseVideo = pause;
             },
-            args: [shouldPause]
+            args: [shouldPause],
         });
         const results = await browser.scripting.executeScript({
             target: { tabId: tab.id },
-            files: ['src/youtube.js']
+            files: ['src/youtube.js'],
         });
         const firstResult = results[0];
         if (!firstResult || !Array.isArray(firstResult.result)) {
             return undefined;
         }
         const [timeWatched, totalDuration, title] = firstResult.result as [string, string, string];
-        const timeWatchedNumber = stringToSecondsWatched(timeWatched);
-        const totalDurationNumber = stringToSecondsWatched(totalDuration);
+        const timeWatchedNumber = stringToSeconds(timeWatched);
+        const totalDurationNumber = stringToSeconds(totalDuration);
         const percentage = totalDurationNumber > 0 ? (timeWatchedNumber / totalDurationNumber) * 100 : 0;
         const youtubeId = tab.url.match(/(?<=\d\/|\.be\/|v[=/])([\w-]{11,})|^([\w-]{11})$/)?.[1] ?? '';
         const tabUrl = tab.url;
@@ -106,7 +107,7 @@ async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, Video
             totalDuration,
             title,
             percentageWatched: percentage,
-            youtubeId
+            youtubeId,
         };
         console.log(data);
         return [tabUrl, data];
@@ -116,31 +117,22 @@ async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, Video
     }
 }
 
-function stringToSecondsWatched(value: string): number {
-    const split = value.split(':').reverse();
-    const seconds = parseInt(split[0] ?? '0', 10) || 0;
-    const minutes = parseInt(split[1] ?? '0', 10) || 0;
-    const hours = split[2] ? parseInt(split[2], 10) || 0 : 0;
-
-    return seconds + (minutes * 60) + (hours * 3600);
-}
-
 function waitForTabReady(tabId: number): Promise<browser.tabs.Tab> {
     return new Promise((resolve, reject) => {
         let listener: (updatedTabId: number, changeInfo: browser.tabs._OnUpdatedChangeInfo, tab: browser.tabs.Tab) => void;
 
         const timeout = setTimeout(() => {
             browser.tabs.onUpdated.removeListener(listener);
-            reject(new Error("Tab took too long to finish loading"));
+            reject(new Error('Tab took too long to finish loading'));
         }, 30000); // 30 seconds max
 
         listener = (updatedTabId: number, changeInfo: browser.tabs._OnUpdatedChangeInfo, tab: browser.tabs.Tab) => {
-            if (updatedTabId === tabId && changeInfo.status === "complete") {
+            if (updatedTabId === tabId && changeInfo.status === 'complete') {
                 clearTimeout(timeout);
                 browser.tabs.onUpdated.removeListener(listener);
 
-                if (!tab.url || !tab.url.startsWith("http")) {
-                    reject(new Error("Tab has invalid or restricted URL: " + tab.url));
+                if (!tab.url || !tab.url.startsWith('http')) {
+                    reject(new Error('Tab has invalid or restricted URL: ' + tab.url));
                     return;
                 }
 

@@ -9,11 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "rootDir": "./src",
     "outDir": "./dist/src",
-    "types": [
-      "firefox-webext-browser"
-    ]
+    "types": ["firefox-webext-browser"]
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

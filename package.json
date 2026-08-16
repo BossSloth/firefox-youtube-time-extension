@@ -1,6 +1,7 @@
 {
   "name": "firefox-youtube-time-tracker",
   "version": "1.0.0",
+  "license": "MIT",
   "main": "background.js",
   "scripts": {
     "build": "tsc",
@@ -8,10 +9,10 @@
     "lint": "oxlint src && web-ext lint --source-dir ./dist/",
     "serve:firefox": "web-ext run --source-dir ./dist/ --firefox-profile=test --keep-profile-changes --pref browser.startup.page=3"
   },
-  "license": "MIT",
   "devDependencies": {
     "@types/firefox-webext-browser": "^143.0.0",
     "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2",
     "web-ext": "^10.6.0"
   }

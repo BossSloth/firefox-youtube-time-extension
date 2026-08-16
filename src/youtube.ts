@@ -1,5 +1,5 @@
 function waitForElm(selector: string): Promise<Element | null> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         const existing = document.querySelector(selector);
         if (existing) {
             resolve(existing);
@@ -16,7 +16,7 @@ function waitForElm(selector: string): Promise<Element | null> {
 
         observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
         });
     });
 }
@@ -33,13 +33,9 @@ async function start() {
         video.pause();
     }
 
-    return [
-        currentTime?.textContent ?? '0:00',
-        duration?.textContent ?? '0:00',
-        title
-    ];
+    return [currentTime?.textContent ?? '0:00', duration?.textContent ?? '0:00', title];
 }
 
-start().then((data) => {
+void start().then((data) => {
     return data;
-})
+});
