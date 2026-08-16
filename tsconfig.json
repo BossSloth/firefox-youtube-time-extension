@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "esModuleInterop": false,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
     "rootDir": "./src",
     "outDir": "./dist/src",
     "types": [

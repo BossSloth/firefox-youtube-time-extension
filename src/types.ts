@@ -1,9 +1,7 @@
-export class VideoData {
-  constructor(
-    public timeWatched: string,
-    public totalDuration: string,
-    public title: string,
-    public percentageWatched: number,
-    public youtubeId: string,
-  ) {}
+export interface VideoData {
+  timeWatched: string;
+  totalDuration: string;
+  title: string;
+  percentageWatched: number;
+  youtubeId: string;
 }

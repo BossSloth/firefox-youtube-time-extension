@@ -14,10 +14,10 @@
       "default_popup": "index.html"
     },
     "icons": {
-      "16": "icon/logo.png",
-      "48": "icon/logo.png",
-      "128": "icon/logo.png",
-      "256": "icon/logo.png"
+      "16": "icon/logo-16.png",
+      "48": "icon/logo-48.png",
+      "128": "icon/logo-128.png",
+      "256": "icon/logo-256.png"
     },
     "browser_specific_settings": {
       "gecko": {

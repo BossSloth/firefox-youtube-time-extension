@@ -1,13 +1,16 @@
-function waitForElm(selector: string) {
+function waitForElm(selector: string): Promise<Element | null> {
     return new Promise(resolve => {
-        if (document.querySelector(selector)) {
-            return resolve(document.querySelector(selector));
+        const existing = document.querySelector(selector);
+        if (existing) {
+            resolve(existing);
+            return;
         }
 
-        const observer = new MutationObserver(mutations => {
-            if (document.querySelector(selector)) {
+        const observer = new MutationObserver(() => {
+            const found = document.querySelector(selector);
+            if (found) {
                 observer.disconnect();
-                resolve(document.querySelector(selector));
+                resolve(found);
             }
         });
 
@@ -20,13 +23,13 @@ function waitForElm(selector: string) {
 
 async function start() {
     await waitForElm('.ytp-time-current');
-    const title = document.title.split('- YouTube')[0].trim();
+    const title = document.title.split('- YouTube')[0]?.trim() ?? '';
 
     const video = document.querySelector('video');
     const currentTime = document.querySelector('.ytp-time-current');
     const duration = document.querySelector('.ytp-time-duration');
 
-    if (video && (window as any).shouldPauseVideo) {
+    if (video && (window as unknown as { shouldPauseVideo?: boolean }).shouldPauseVideo) {
         video.pause();
     }
 

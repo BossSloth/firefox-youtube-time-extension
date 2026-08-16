@@ -1,26 +1,21 @@
-import { VideoData } from "./types.js";
+import type { VideoData } from "./types.js";
 import Tab = browser.tabs.Tab;
 
-// @ts-ignore
-async function init() {
-    // Check YouTube tabs when extension is loaded
-    checkYouTubeTabs();
+async function init(): Promise<void> {
+    await checkYouTubeTabs();
 }
 
-async function getStorage(): Promise<{ [key: string]: VideoData }> {
-    return (await browser.storage.local.get('videoDataStorage')).videoDataStorage ?? {};
-}
-
-async function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+async function getStorage(): Promise<Record<string, VideoData>> {
+    const data = await browser.storage.local.get('videoDataStorage');
+    return (data as { videoDataStorage?: Record<string, VideoData> }).videoDataStorage ?? {};
 }
 
 // Check all YouTube tabs
-async function checkYouTubeTabs() {
+async function checkYouTubeTabs(): Promise<void> {
     console.log('Gathering youtube tabs');
     const videoDataStorage = await getStorage();
-    let tabs = await browser.tabs.query({});
-    let urls = tabs.map(tab => tab.url);
+    const tabs = await browser.tabs.query({});
+    const urls = tabs.map(tab => tab.url).filter((url): url is string => Boolean(url));
 
     for (const key in videoDataStorage) {
         if (!urls.includes(key)) {
@@ -29,84 +24,66 @@ async function checkYouTubeTabs() {
         }
     }
 
-    const promises: Promise<void>[] = [];
-    for (let tab of tabs) {
-        if (tab.url) {
-            if (tab.url.includes('youtube.com/watch')) {
-                promises.push(new Promise(async (resolve, reject) => {
-                    const tabDiscarded = tab.discarded;
-                    if (tabDiscarded) {
-                        if (tab.url in videoDataStorage) {
-                            resolve();
-                            return;
-                        }
+    const updates = tabs
+        .filter((tab): tab is Tab & { id: number; url: string } => typeof tab.id === 'number' && typeof tab.url === 'string' && tab.url.includes('youtube.com/watch'))
+        .map(async (tab) => {
+            const tabDiscarded = tab.discarded;
+            if (tabDiscarded) {
+                if (tab.url in videoDataStorage) {
+                    return;
+                }
 
-                        await waitForTabReady(tab.id);
-                    }
-
-    const data = await updateTab(tab, true);
-                    if (data) {
-                        videoDataStorage[data[0]] = data[1];
-                    }
-                    await browser.storage.local.set({'videoDataStorage': videoDataStorage});
-                    if (tabDiscarded) {
-                        browser.tabs.discard(tab.id);
-                    }
-                    resolve();
-                }));
+                await waitForTabReady(tab.id);
             }
-        }
-    }
 
-    await Promise.all(promises);
-    await browser.storage.local.set({'videoDataStorage': videoDataStorage});
+            const data = await updateTab(tab, true);
+            if (data) {
+                videoDataStorage[data[0]] = data[1];
+            }
+            await browser.storage.local.set({ videoDataStorage });
+            if (tabDiscarded) {
+                await browser.tabs.discard(tab.id);
+            }
+        });
+
+    await Promise.all(updates);
+    await browser.storage.local.set({ videoDataStorage });
 }
 
 browser.tabs.onActivated.addListener(async (activeInfo) => {
+    if (typeof activeInfo.previousTabId !== 'number') {
+        return;
+    }
     const previousTab = await browser.tabs.get(activeInfo.previousTabId);
     const storage = await getStorage();
-    if (previousTab.url.includes('youtube.com/watch') && previousTab.url in storage) {
+    if (previousTab.url?.includes('youtube.com/watch') && previousTab.url in storage) {
         console.log('Updating ' + previousTab.url);
         const data = await updateTab(previousTab, false);
         if (data) {
             storage[data[0]] = data[1];
-            await browser.storage.local.set({'videoDataStorage': storage});
+            await browser.storage.local.set({ videoDataStorage: storage });
         }
     }
 });
 
-// browser.tabs.onMoved.addListener(async (tabId, moveInfo) => {
-//     let tab = await browser.tabs.get(tabId);
-//     if (tab.url.includes('youtube.com/watch') && tab.url in (await getStorage())) {
-//         console.log('Updating ' + tab.url);
-//         await updateTab(tab);
-//     }
-// })
-
-browser.runtime.onMessage.addListener(async (message: any) => {
+browser.runtime.onMessage.addListener(async (message: object) => {
     console.log('Message ', message);
-    if (message.doUpdate) {
+    if ('doUpdate' in message && message.doUpdate) {
         await checkYouTubeTabs();
     }
 
     return true;
-})
+});
 
-// Display video data when button is clicked
-// browser.browserAction.onClicked.addListener(() => {
-//     console.log(videoDataStorage);
-// });
-
-async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, VideoData] | undefined>
-{
-    if (!tab.url || !tab.url.includes('youtube.com/watch')) {
+async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, VideoData] | undefined> {
+    if (typeof tab.id !== 'number' || !tab.url || !tab.url.includes('youtube.com/watch')) {
         return undefined;
     }
     try {
         await browser.scripting.executeScript({
             target: { tabId: tab.id },
             func: (pause: boolean) => {
-                (window as any).shouldPauseVideo = pause;
+                (window as unknown as { shouldPauseVideo?: boolean }).shouldPauseVideo = pause;
             },
             args: [shouldPause]
         });
@@ -114,46 +91,57 @@ async function updateTab(tab: Tab, shouldPause: boolean): Promise<[string, Video
             target: { tabId: tab.id },
             files: ['src/youtube.js']
         });
-        const [timeWatched, totalDuration, title] = results[0].result as [string, string, string];
-        let timeWatchedNumber = stringToSecondsWatched(timeWatched);
-        let totalDurationNumber = stringToSecondsWatched(totalDuration);
-        let percentage = timeWatchedNumber/totalDurationNumber*100;
-        const youtubeId = tab.url.match(/(?<=\d\/|\.be\/|v[=\/])([\w\-]{11,})|^([\w\-]{11})$/)?.[1];
+        const firstResult = results[0];
+        if (!firstResult || !Array.isArray(firstResult.result)) {
+            return undefined;
+        }
+        const [timeWatched, totalDuration, title] = firstResult.result as [string, string, string];
+        const timeWatchedNumber = stringToSecondsWatched(timeWatched);
+        const totalDurationNumber = stringToSecondsWatched(totalDuration);
+        const percentage = totalDurationNumber > 0 ? (timeWatchedNumber / totalDurationNumber) * 100 : 0;
+        const youtubeId = tab.url.match(/(?<=\d\/|\.be\/|v[=/])([\w-]{11,})|^([\w-]{11})$/)?.[1] ?? '';
         const tabUrl = tab.url;
-        const data = new VideoData(timeWatched, totalDuration, title, percentage, youtubeId);
+        const data: VideoData = {
+            timeWatched,
+            totalDuration,
+            title,
+            percentageWatched: percentage,
+            youtubeId
+        };
         console.log(data);
-        return [tabUrl, data]
+        return [tabUrl, data];
     } catch (error) {
         console.error(error, tab);
         return undefined;
     }
 }
 
-function stringToSecondsWatched(value: string): number
-{
-    let split = value.split(':').reverse();
-    let seconds = parseInt(split[0]);
-    let minutes = parseInt(split[1]);
-    let hours = split[2] ? parseInt(split[2]) : 0;
+function stringToSecondsWatched(value: string): number {
+    const split = value.split(':').reverse();
+    const seconds = parseInt(split[0] ?? '0', 10) || 0;
+    const minutes = parseInt(split[1] ?? '0', 10) || 0;
+    const hours = split[2] ? parseInt(split[2], 10) || 0 : 0;
 
     return seconds + (minutes * 60) + (hours * 3600);
 }
 
 function waitForTabReady(tabId: number): Promise<browser.tabs.Tab> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
+        let listener: (updatedTabId: number, changeInfo: browser.tabs._OnUpdatedChangeInfo, tab: browser.tabs.Tab) => void;
+
         const timeout = setTimeout(() => {
             browser.tabs.onUpdated.removeListener(listener);
             reject(new Error("Tab took too long to finish loading"));
         }, 30000); // 30 seconds max
 
-
-        const listener = (updatedTabId: number, changeInfo: browser.tabs._OnUpdatedChangeInfo, tab: browser.tabs.Tab) => {
+        listener = (updatedTabId: number, changeInfo: browser.tabs._OnUpdatedChangeInfo, tab: browser.tabs.Tab) => {
             if (updatedTabId === tabId && changeInfo.status === "complete") {
                 clearTimeout(timeout);
                 browser.tabs.onUpdated.removeListener(listener);
 
                 if (!tab.url || !tab.url.startsWith("http")) {
-                    return reject(new Error("Tab has invalid or restricted URL: " + tab.url));
+                    reject(new Error("Tab has invalid or restricted URL: " + tab.url));
+                    return;
                 }
 
                 resolve(tab);
@@ -161,7 +149,7 @@ function waitForTabReady(tabId: number): Promise<browser.tabs.Tab> {
         };
 
         browser.tabs.onUpdated.addListener(listener);
-        await browser.tabs.reload(tabId);
+        browser.tabs.reload(tabId).catch(reject);
     });
 }
 

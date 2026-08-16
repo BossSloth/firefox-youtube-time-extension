@@ -5,12 +5,14 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
-    "serve:firefox": "web-ext run --start-url \"about:debugging#/runtime/this-firefox\"  --source-dir ./dist/ --firefox-profile=test"
+    "lint": "oxlint src && web-ext lint --source-dir ./dist/",
+    "serve:firefox": "web-ext run --source-dir ./dist/ --firefox-profile=test --keep-profile-changes --pref browser.startup.page=3"
   },
   "license": "MIT",
   "devDependencies": {
     "@types/firefox-webext-browser": "^143.0.0",
-    "typescript": "^5.9.3",
-    "web-ext": "^9.2.0"
+    "oxlint": "^1.78.0",
+    "typescript": "^7.0.2",
+    "web-ext": "^10.6.0"
   }
 }
